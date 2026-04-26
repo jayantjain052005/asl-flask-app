@@ -697,3 +697,39 @@ async function checkStatus() {
 if (window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 }
+// 🔥 NEW: Browser Camera Capture
+let browserVideo = document.createElement("video");
+browserVideo.autoplay = true;
+
+// start camera
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+    browserVideo.srcObject = stream;
+})
+.catch(err => {
+    console.error("Camera error:", err);
+});
+
+// send frames to backend
+setInterval(() => {
+    if (!browserVideo.videoWidth) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = browserVideo.videoWidth;
+    canvas.height = browserVideo.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(browserVideo, 0, 0);
+
+    const image = canvas.toDataURL("image/jpeg");
+
+    fetch("/api/upload_frame", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            image: image,
+            mode: currentMode || "words"
+        })
+    });
+
+}, 500);
