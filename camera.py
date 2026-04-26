@@ -51,6 +51,8 @@ class CameraStream:
 
     # ── Public controls ───────────────────────────────────────────
     def start(self):
+        # if self.dual_predictor:
+        #     self.dual_predictor.switch_mode(self._mode)
         if self.running:
             return {"ok": True, "message": "Already running"}
 

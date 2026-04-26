@@ -3,12 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SignAI — Dual Model Sign Language Detector</title>
+<title>SignAI — Hogwarts Sign Language Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body class="dark">
+<body>
+
+<!-- Magical floating particles (purely decorative) -->
+<div class="magic-particles" id="magicParticles" aria-hidden="true"></div>
 
 <!-- ══════════════════════════════════════ NAVBAR -->
 <nav class="navbar">
@@ -16,7 +19,7 @@
     <div class="brand-glyph">🤟</div>
     <div>
       <div class="brand-name">SignAI</div>
-      <div class="brand-tag">Dual Model Detector</div>
+      <div class="brand-tag">Hogwarts Sign Language Academy</div>
     </div>
   </div>
 
@@ -27,13 +30,13 @@
       <span class="mode-label">Words &amp; Phrases</span>
       <span class="mode-model">sign_model_2hand</span>
     </button>
-    <!-- <div class="mode-divider"></div>
+    <div class="mode-divider"></div>
     <button class="mode-btn" id="btnModeAlpha" onclick="switchMode('alpha')">
       <span class="mode-icon">🔤</span>
       <span class="mode-label">Alphabet</span>
       <span class="mode-model">sign_model_alpha</span>
     </button>
-  </div> -->
+  </div>
 
   <div class="nav-right">
     <div class="status-pill" id="statusPill">
@@ -65,7 +68,7 @@
     </div>
 
     <div class="search-row">
-      <input id="searchInput" class="search-inp" type="text" placeholder="Search…" autocomplete="off">
+      <input id="searchInput" class="search-inp" type="text" placeholder="Seek your spell…" autocomplete="off">
     </div>
 
     <!-- Currently detected hero -->
@@ -140,9 +143,9 @@
     <div class="cam-shell" id="camShell">
       <!-- idle state -->
       <div class="cam-idle" id="camIdle">
-        <div class="idle-emoji">📷</div>
-        <div class="idle-h">Camera Offline</div>
-        <div class="idle-sub">Press Start Camera to begin</div>
+        <div class="idle-emoji">🪄</div>
+        <div class="idle-h">The Mirror of Erised Awaits</div>
+        <div class="idle-sub">Press Start Camera to reveal your signs</div>
       </div>
 
       <img id="videoFeed" src="" alt="feed" style="display:none">
@@ -162,8 +165,8 @@
             <svg class="arc-ring" viewBox="0 0 80 80">
               <defs>
                 <linearGradient id="arcG" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#4d9eff"/>
-                  <stop offset="100%" stop-color="#00d4aa"/>
+                  <stop offset="0%" stop-color="#8b1a1a"/>
+                  <stop offset="100%" stop-color="#c9a84c"/>
                 </linearGradient>
               </defs>
               <circle cx="40" cy="40" r="32" class="arc-bg"/>
@@ -177,7 +180,7 @@
 
     <!-- controls -->
     <div class="controls">
-      <button class="btn primary" id="btnStart" onclick="startCamera()">▶ Start Camera</button>
+      <button class="btn primary" id="btnStart" onclick="startCamera()">⚡ Start Camera</button>
       <button class="btn danger"  id="btnStop"  onclick="stopCamera()"   disabled>■ Stop</button>
       <button class="btn ghost"   id="btnSnap"  onclick="takeSnapshot()" disabled>📸 Screenshot</button>
       <button class="btn ghost"   id="btnReset" onclick="resetAll()">↺ Reset</button>
@@ -192,15 +195,16 @@
     <!-- sentence builder -->
     <div class="sentence-panel">
       <div class="sentence-hdr">
-        <span class="sentence-title">📝 Sentence Builder</span>
+        <span class="sentence-title">📜 Spell Scroll Builder</span>
         <div class="sentence-actions">
           <button class="sbtn" onclick="addWord()">＋ Add Word</button>
           <button class="sbtn" onclick="clearSentence()">✕ Clear</button>
           <button class="sbtn accent" onclick="speakSentence()">🔊 Speak All</button>
+          <button class="sbtn" id="btnAiFix" onclick="fixGrammarWithAI()" style="background:linear-gradient(135deg,#a78bfa22,#7c3aed22);border-color:#a78bfa88;color:#a78bfa;">✨ Fix Grammar</button>
         </div>
       </div>
       <div class="sentence-box" id="sentenceBox">
-        <span class="sentence-placeholder">Detected signs will appear here…</span>
+        <span class="sentence-placeholder">Your detected signs shall appear here, like ink on parchment…</span>
       </div>
     </div>
 
@@ -216,8 +220,8 @@
         <svg class="big-arc" viewBox="0 0 140 140">
           <defs>
             <linearGradient id="bigG" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#4d9eff"/>
-              <stop offset="100%" stop-color="#00d4aa"/>
+              <stop offset="0%" stop-color="#8b1a1a"/>
+              <stop offset="100%" stop-color="#c9a84c"/>
             </linearGradient>
           </defs>
           <circle cx="70" cy="70" r="56" class="big-arc-bg"/>
@@ -236,7 +240,7 @@
       <div class="setting-row">
         <span>🌙 Dark mode</span>
         <label class="toggle-pill">
-          <input type="checkbox" id="chkDark" checked onchange="toggleDark()">
+          <input type="checkbox" id="chkDark" onchange="toggleDark()">
           <span class="pill-track"><span class="pill-thumb"></span></span>
         </label>
       </div>
@@ -265,5 +269,22 @@
 </div><!-- /layout -->
 
 <script src="/static/js/main.js"></script>
+
+<!-- Spawn floating particles -->
+<script>
+(function(){
+  const GLYPHS = ['✨','⚡','✦','🌟','◆','★','🔮'];
+  const el = document.getElementById('magicParticles');
+  for(let i=0;i<22;i++){
+    const p = document.createElement('span');
+    p.className = 'mp';
+    p.textContent = GLYPHS[Math.floor(Math.random()*GLYPHS.length)];
+    p.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;
+      --d:${7+Math.random()*10}s;--del:${Math.random()*8}s;
+      font-size:${9+Math.random()*10}px;`;
+    el.appendChild(p);
+  }
+})();
+</script>
 </body>
 </html>

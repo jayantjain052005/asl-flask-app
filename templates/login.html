@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SignAI — The Hogwarts Entrance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700;900&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   SignAI — Hogwarts Login  |  Magical Light Theme
+   ═══════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold:    #c9a84c;
+  --gold2:   #f0c040;
+  --crimson: #8b1a1a;
+  --navy:    #1a1f5e;
+  --parch:   #fdf8ef;
+  --parch2:  #f5ede0;
+  --ink:     #2c1810;
+  --ink2:    #5c3d2e;
+  --ink3:    #9c7a5e;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'IM Fell English', serif;
+  overflow: hidden;
+}
+
+body {
+  background: radial-gradient(ellipse at 30% 20%, #1a0a04 0%, #0a0502 60%, #050202 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── Starfield ─────────────────────────────────────── */
+.stars {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.star {
+  position: absolute;
+  width: 2px; height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  animation: twinkle var(--d, 3s) ease-in-out var(--del, 0s) infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.1; transform: scale(1); }
+  50%       { opacity: 0.9; transform: scale(1.6); }
+}
+
+/* Golden shooting star */
+.shooting-star {
+  position: fixed;
+  top: 10%;
+  left: -10%;
+  width: 180px; height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold2), transparent);
+  animation: shoot 6s ease-in-out 2s infinite;
+  z-index: 0;
+  opacity: 0;
+}
+@keyframes shoot {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(20deg); }
+  10%  { opacity: 1; }
+  40%  { opacity: 0; transform: translate(120vw, 40vh) rotate(20deg); }
+  100% { opacity: 0; }
+}
+
+/* ── Floating magical particles ────────────────────── */
+.particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.particle {
+  position: absolute;
+  font-size: var(--fs, 16px);
+  animation: drift var(--d, 8s) ease-in-out var(--del, 0s) infinite;
+  opacity: 0.12;
+  filter: blur(0.5px);
+}
+@keyframes drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.08; }
+  33%       { transform: translateY(-30px) rotate(180deg); opacity: 0.2; }
+  66%       { transform: translateY(10px) rotate(-90deg); opacity: 0.12; }
+}
+
+/* ── Castle silhouette ─────────────────────────────── */
+.castle-bg {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 38vh;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.07;
+}
+
+/* ── MAIN CARD ─────────────────────────────────────── */
+.card-wrapper {
+  position: relative;
+  z-index: 10;
+  perspective: 1000px;
+  animation: cardAppear 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes cardAppear {
+  from { opacity: 0; transform: translateY(40px) rotateX(8deg) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
+}
+
+.card {
+  width: 420px;
+  background: linear-gradient(160deg, var(--parch) 0%, #fdf5e6 40%, var(--parch2) 100%);
+  border: 2px solid var(--gold);
+  border-radius: 16px;
+  padding: 44px 40px 36px;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(201,168,76,.3),
+    0 2px 0 0 rgba(201,168,76,.4),
+    0 20px 80px rgba(0,0,0,.8),
+    0 0 120px rgba(201,168,76,.1),
+    inset 0 0 40px rgba(201,168,76,.04);
+}
+
+/* Parchment texture */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Corner runes */
+.card::after {
+  content: '✦';
+  position: absolute;
+  font-size: 18px;
+  color: var(--gold);
+  opacity: .5;
+  bottom: 16px; right: 18px;
+}
+
+.corner-rune {
+  position: absolute;
+  font-size: 18px;
+  color: var(--gold);
+  opacity: .5;
+}
+.corner-rune.tl { top: 16px; left: 18px; }
+.corner-rune.tr { top: 16px; right: 18px; }
+.corner-rune.bl { bottom: 16px; left: 18px; }
+
+/* ── Crest / Emblem ─────────────────────────────────── */
+.crest {
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative;
+}
+.crest-ring {
+  width: 90px; height: 90px;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle, rgba(201,168,76,.12) 0%, transparent 70%);
+  box-shadow: 0 0 30px rgba(201,168,76,.25), inset 0 0 20px rgba(201,168,76,.05);
+  position: relative;
+  animation: rotateSlow 20s linear infinite;
+}
+.crest-ring::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px dashed rgba(201,168,76,.3);
+  border-radius: 50%;
+  animation: rotateSlow 30s linear reverse infinite;
+}
+@keyframes rotateSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.crest-emoji {
+  font-size: 38px;
+  filter: drop-shadow(0 0 16px rgba(240,192,64,.7));
+  animation: rotateSlow 20s linear reverse infinite; /* counter-rotate to stay upright */
+}
+
+.crest-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: .06em;
+  text-shadow: 0 1px 3px rgba(201,168,76,.2);
+  line-height: 1.2;
+}
+.crest-subtitle {
+  font-family: 'IM Fell English', serif;
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Divider */
+.divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 18px 0;
+}
+.divider-line { flex: 1; height: 1px; background: linear-gradient(to right, transparent, var(--gold), transparent); }
+.divider-glyph { color: var(--gold); font-size: 14px; }
+
+/* ── Form ─────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 18px;
+  position: relative;
+}
+.form-label {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  color: var(--gold);
+  margin-bottom: 7px;
+}
+.input-wrap {
+  position: relative;
+}
+.input-icon {
+  position: absolute;
+  left: 13px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: .5;
+  pointer-events: none;
+}
+.form-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background: rgba(255,250,235,.7);
+  border: 1.5px solid var(--gold);
+  border-radius: 8px;
+  font-family: 'IM Fell English', serif;
+  font-size: 15px;
+  color: var(--ink);
+  outline: none;
+  transition: all .25s;
+  box-shadow: inset 0 1px 6px rgba(44,24,16,.06), 0 1px 0 rgba(255,255,255,.5);
+}
+.form-input:focus {
+  border-color: var(--crimson);
+  box-shadow:
+    inset 0 1px 6px rgba(44,24,16,.06),
+    0 0 0 3px rgba(201,168,76,.2),
+    0 0 20px rgba(201,168,76,.1);
+  background: rgba(255,252,240,.95);
+}
+.form-input::placeholder { color: var(--ink3); font-style: italic; }
+
+/* Eye toggle */
+.eye-btn {
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  cursor: pointer; font-size: 16px;
+  opacity: .45;
+  transition: opacity .2s;
+}
+.eye-btn:hover { opacity: .8; }
+
+/* Remember row */
+.remember-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.check-label {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ink2);
+}
+.check-label input[type="checkbox"] { display: none; }
+.check-box {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--gold);
+  border-radius: 3px;
+  background: rgba(255,250,235,.7);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+  font-size: 11px;
+}
+.check-label input:checked ~ .check-box {
+  background: var(--gold);
+  color: #fff5e0;
+}
+.forgot-link {
+  font-size: 11px;
+  color: var(--gold);
+  text-decoration: none;
+  font-family: 'Cinzel', serif;
+  letter-spacing: .06em;
+  border-bottom: 1px dotted rgba(201,168,76,.4);
+  transition: all .2s;
+}
+.forgot-link:hover { color: var(--crimson); border-bottom-color: var(--crimson); }
+
+/* ── Login Button ──────────────────────────────────── */
+.btn-login {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #6b0f0f 0%, #8b1a1a 40%, #c9a84c 100%);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  color: #fff5e0;
+  cursor: pointer;
+  transition: all .3s;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(139,26,26,.4), 0 1px 0 rgba(255,255,255,.15) inset;
+  text-transform: uppercase;
+}
+.btn-login::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,.1), transparent);
+  transform: translateX(-100%);
+  transition: transform .5s;
+}
+.btn-login:hover {
+  box-shadow: 0 8px 40px rgba(201,168,76,.4), 0 4px 24px rgba(139,26,26,.5);
+  transform: translateY(-2px);
+}
+.btn-login:hover::before { transform: translateX(100%); }
+.btn-login:active { transform: translateY(0); }
+
+/* Magic sparkles on hover */
+.btn-login .sparkle {
+  position: absolute;
+  pointer-events: none;
+  font-size: 14px;
+  animation: sparkleAnim .6s ease forwards;
+}
+@keyframes sparkleAnim {
+  0%   { opacity: 1; transform: scale(0) rotate(0deg); }
+  50%  { opacity: 1; transform: scale(1.5) rotate(180deg); }
+  100% { opacity: 0; transform: scale(0) rotate(360deg) translate(30px, -30px); }
+}
+
+/* ── Footer text ──────────────────────────────────── */
+.card-footer {
+  margin-top: 22px;
+  text-align: center;
+}
+.footer-latin {
+  font-size: 11px;
+  color: var(--ink3);
+  font-style: italic;
+  letter-spacing: .08em;
+}
+.footer-latin span {
+  color: var(--gold);
+  font-style: normal;
+}
+
+/* ── Error message ──────────────────────────────────── */
+.error-msg {
+  display: none;
+  background: rgba(139,26,26,.1);
+  border: 1px solid rgba(139,26,26,.3);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--crimson);
+  margin-bottom: 14px;
+  font-style: italic;
+  animation: shakeErr .4s ease;
+}
+@keyframes shakeErr {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* ── Loading state ──────────────────────────────────── */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,5,2,.85);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+}
+.loading-overlay.show { display: flex; }
+.loading-emoji {
+  font-size: 52px;
+  animation: floatGlyph 1.5s ease-in-out infinite;
+}
+@keyframes floatGlyph {
+  0%,100% { transform: translateY(0) rotate(-5deg); }
+  50%      { transform: translateY(-12px) rotate(5deg); }
+}
+.loading-text {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  color: var(--gold2);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  animation: shimmer 2s ease-in-out infinite;
+}
+.loading-dots::after {
+  content: '';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+@keyframes dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+  100% { content: ''; }
+}
+@keyframes shimmer {
+  0%, 100% { opacity: .7; }
+  50% { opacity: 1; text-shadow: 0 0 20px rgba(240,192,64,.8); }
+}
+
+/* responsiveness */
+@media (max-width: 480px) {
+  .card { width: 90vw; padding: 32px 24px 28px; margin: 0 16px; }
+  .crest-title { font-size: 18px; }
+  .btn-login { font-size: 12px; padding: 12px 16px; }
+  .form-input { font-size: 14px; padding: 10px 12px 10px 38px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+<div class="shooting-star"></div>
+
+<!-- Magical particles -->
+<div class="particles" id="particles"></div>
+
+<!-- Castle SVG silhouette -->
+<svg class="castle-bg" viewBox="0 0 1440 400" xmlns="http://www.w3.org/2000/svg" fill="#c9a84c">
+  <path d="M0,400 L0,250 L40,250 L40,200 L60,200 L60,180 L80,180 L80,200 L100,200 L100,250
+           L140,250 L140,220 L160,220 L160,180 L170,160 L180,180 L180,220 L200,220
+           L200,250 L280,250 L280,210 L300,210 L300,180 L310,160 L320,180 L320,210 L340,210
+           L340,250 L400,250 L400,200 L430,200 L430,150 L445,130 L460,150 L460,200 L490,200
+           L490,250 L540,250 L540,280 L600,280 L600,250 L660,250 L660,200 L680,200 L680,170
+           L700,150 L720,170 L720,200 L740,200 L740,250 L800,250 L800,280 L860,280 L860,250
+           L900,250 L900,200 L930,200 L930,160 L945,140 L960,160 L960,200 L990,200 L990,250
+           L1040,250 L1040,220 L1060,220 L1060,180 L1080,180 L1080,220 L1100,220 L1100,250
+           L1180,250 L1180,210 L1200,210 L1200,170 L1215,150 L1230,170 L1230,210 L1250,210
+           L1250,250 L1300,250 L1300,200 L1330,200 L1330,250 L1380,250 L1380,200 L1410,200
+           L1410,180 L1430,180 L1430,200 L1440,200 L1440,400 Z"/>
+</svg>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-emoji">🧙‍♂️</div>
+  <div class="loading-text">Entering the Great Hall<span class="loading-dots"></span></div>
+</div>
+
+<!-- LOGIN CARD -->
+<div class="card-wrapper">
+  <div class="card">
+    <span class="corner-rune tl">✦</span>
+    <span class="corner-rune tr">✦</span>
+    <span class="corner-rune bl">✦</span>
+
+    <!-- Crest -->
+    <div class="crest">
+      <div class="crest-ring">
+        <span class="crest-emoji">🤟</span>
+      </div>
+      <div class="crest-title">SignAI</div>
+      <div class="crest-subtitle">Hogwarts Sign Language Academy</div>
+    </div>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-glyph">⚡</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- Error message -->
+    <div class="error-msg" id="errorMsg">
+      🔮 The Room of Requirement denies entry. Check your credentials.
+    </div>
+
+    <!-- Form -->
+    <form id="loginForm">
+      <div class="form-group">
+        <label class="form-label" for="username">Wizard Identity</label>
+        <div class="input-wrap">
+          <span class="input-icon">🧙</span>
+          <input
+            class="form-input"
+            type="text"
+            id="username"
+            placeholder="Your name, young witch or wizard…"
+            autocomplete="username"
+            required
+          >
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Enchanted Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">🔑</span>
+          <input
+            class="form-input"
+            type="password"
+            id="password"
+            placeholder="Whisper the incantation…"
+            autocomplete="current-password"
+            required
+          >
+          <button type="button" class="eye-btn" id="eyeBtn" aria-label="Toggle password visibility">👁</button>
+        </div>
+      </div>
+
+      <div class="remember-row">
+        <label class="check-label">
+          <input type="checkbox" id="remember">
+          <span class="check-box" id="checkBox">✓</span>
+          Remember my spell
+        </label>
+        <a href="#" class="forgot-link" id="forgotLink">Obliviate?</a>
+      </div>
+
+      <button type="submit" class="btn-login" id="loginBtn">
+        ⚡ &nbsp; Enter the Great Hall
+      </button>
+    </form>
+
+    <div class="card-footer">
+      <div class="footer-latin">
+        <span>Alohomora</span> — May your signs illuminate the way
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Generate stars ─────────────────────────────────
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 120; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.cssText = `
+    left: ${Math.random()*100}%;
+    top:  ${Math.random()*100}%;
+    --d:  ${2 + Math.random()*4}s;
+    --del: ${Math.random()*5}s;
+    width:  ${Math.random() > .7 ? 3 : 2}px;
+    height: ${Math.random() > .7 ? 3 : 2}px;
+    opacity: ${0.1 + Math.random()*0.5};
+  `;
+  starsEl.appendChild(s);
+}
+
+// ── Generate particles ─────────────────────────────
+const PARTICLES = ['✨','⚡','🌟','✦','★','◆','🔮','🪄'];
+const particlesEl = document.getElementById('particles');
+for (let i = 0; i < 18; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.textContent = PARTICLES[Math.floor(Math.random()*PARTICLES.length)];
+  p.style.cssText = `
+    left: ${Math.random()*100}%;
+    top:  ${Math.random()*100}%;
+    --fs:  ${10 + Math.random()*14}px;
+    --d:   ${6 + Math.random()*10}s;
+    --del: ${Math.random()*8}s;
+  `;
+  particlesEl.appendChild(p);
+}
+
+// ── Checkbox visual ──────────────────────────────
+const rememberCheck = document.getElementById('remember');
+const checkBoxSpan = document.getElementById('checkBox');
+rememberCheck.addEventListener('change', () => {
+  if (rememberCheck.checked) {
+    checkBoxSpan.style.display = 'flex';
+    checkBoxSpan.textContent = '✓';
+  } else {
+    checkBoxSpan.textContent = '';
+  }
+});
+checkBoxSpan.textContent = '';
+
+function togglePassword() {
+  const input = document.getElementById('password');
+  const btn   = document.getElementById('eyeBtn');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+document.getElementById('eyeBtn').addEventListener('click', togglePassword);
+
+// ── Sparkle effect on button hover ───────────────
+const loginBtn = document.getElementById('loginBtn');
+loginBtn.addEventListener('mouseenter', function(e) {
+  for (let i = 0; i < 5; i++) {
+    const spark = document.createElement('span');
+    spark.className = 'sparkle';
+    const sparkIcons = ['✨','⚡','✦','★','💫'];
+    spark.textContent = sparkIcons[Math.floor(Math.random() * sparkIcons.length)];
+    spark.style.cssText = `
+      left: ${10 + Math.random() * 80}%;
+      top:  ${10 + Math.random() * 80}%;
+      position: absolute;
+    `;
+    this.appendChild(spark);
+    setTimeout(() => spark.remove(), 700);
+  }
+});
+
+// ── floating "forgot link" message (just playful) ──
+document.getElementById('forgotLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  const errBox = document.getElementById('errorMsg');
+  errBox.style.display = 'block';
+  errBox.innerHTML = '🪄 *POOF* Memory charm not needed. The password is "expelliarmus" (or so the portraits whisper).';
+  errBox.style.animation = 'none';
+  errBox.offsetHeight;
+  errBox.style.animation = '';
+  setTimeout(() => {
+    if(errBox.innerHTML.includes("expelliarmus")) {
+      setTimeout(() => { if(errBox.style.display === 'block') errBox.style.display = 'none'; }, 4000);
+    }
+  }, 100);
+});
+
+// ── AUTHENTICATION HANDLER (direct fetch to Flask backend) ──
+//   This matches the Flask route /login (POST) and respects session.
+//   After success it redirects to /home where index.html is served.
+async function handleLogin(event) {
+  event.preventDefault();
+
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('errorMsg');
+  
+  if (!username || !password) {
+    errEl.style.display = 'block';
+    errEl.innerHTML = '🔮 Both Wizard Identity and Enchanted Password are required.';
+    errEl.style.animation = 'none';
+    errEl.offsetHeight;
+    errEl.style.animation = '';
+    return;
+  }
+  
+  // Show loading overlay without hiding errors yet
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  loadingOverlay.classList.add('show');
+  
+  try {
+    // Prepare form-urlencoded data as Flask expects
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+    
+    const response = await fetch('/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+      credentials: 'same-origin'  // include cookies / session
+    });
+    
+    if (response.ok) {
+      // success – redirect to home (index dashboard)
+      // Keep loading overlay visible during redirect
+      window.location.href = '/home';
+    } else {
+      // authentication failed (401 or other)
+      loadingOverlay.classList.remove('show');
+      errEl.style.display = 'block';
+      errEl.innerHTML = '🔮 The Sorting Hat hesitates... wrong identity or spell. Try "wizard" / "expelliarmus".';
+      errEl.style.animation = 'none';
+      errEl.offsetHeight;
+      errEl.style.animation = '';
+    }
+  } catch (error) {
+    console.error('Login fetch error:', error);
+    loadingOverlay.classList.remove('show');
+    errEl.style.display = 'block';
+    errEl.innerHTML = '⚠️ The Owl Post is delayed. Cannot reach the Great Hall. Make sure the Flask server is running.';
+    errEl.style.animation = 'none';
+    errEl.offsetHeight;
+    errEl.style.animation = '';
+  }
+}
+
+// Attach login handler to form
+const form = document.getElementById('loginForm');
+form.addEventListener('submit', handleLogin);
+
+// Optional: retain last remembered wizard id if "remember spell" is used earlier
+if (localStorage.getItem('saved_username') && localStorage.getItem('remember_spell') === 'true') {
+  const savedUser = localStorage.getItem('saved_username');
+  if (savedUser) {
+    document.getElementById('username').value = savedUser;
+    rememberCheck.checked = true;
+    checkBoxSpan.textContent = '✓';
+    checkBoxSpan.style.display = 'flex';
+  }
+}
+
+rememberCheck.addEventListener('change', () => {
+  const usernameInput = document.getElementById('username').value.trim();
+  if (rememberCheck.checked && usernameInput) {
+    localStorage.setItem('saved_username', usernameInput);
+    localStorage.setItem('remember_spell', 'true');
+  } else if (!rememberCheck.checked) {
+    localStorage.removeItem('saved_username');
+    localStorage.setItem('remember_spell', 'false');
+  }
+});
+
+// Save username when changed if remember is on
+document.getElementById('username').addEventListener('change', () => {
+  if (rememberCheck.checked) {
+    const newUser = document.getElementById('username').value.trim();
+    if (newUser) localStorage.setItem('saved_username', newUser);
+    else localStorage.removeItem('saved_username');
+  }
+});
+
+// Additional: prefill any demo hint for convenience (not auto filling secret)
+console.log("✨ SignAI — Magical login ready. Use wizard/expelliarmus to enter the AI Sign Language chamber.");
+</script>
+</body>
+</html>

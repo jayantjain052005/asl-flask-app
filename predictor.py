@@ -55,6 +55,10 @@ class SignPredictor:
         scale = np.max(np.linalg.norm(pts, axis=1))
         if scale > 0:
             pts /= scale
+        # norms = np.linalg.norm(pts, axis=1)
+        # scale = np.mean(norms[norms > 0]) if np.any(norms > 0) else 1.0
+        # if scale > 0:
+        #     pts /= scale
         return pts.flatten()
 
     def build_vector(self, results) -> np.ndarray:
@@ -83,47 +87,68 @@ class SignPredictor:
 
     def predict(self, results) -> dict:
         hand_count = len(results.multi_hand_landmarks) if results.multi_hand_landmarks else 0
+
+        # ── No hands ─────────────────────────────
         if hand_count == 0:
             self._pred_buf.clear()
             self._conf_buf.clear()
             return self._empty(0, "No hands detected")
 
+        # ── Build features ───────────────────────
         features = self.build_vector(results)
+
         if not np.any(features):
             msg = "Show both hands" if self.feature_dim == WORDS_FEATURE_DIM else "Show your hand"
             return self._empty(hand_count, msg)
 
+        # ── Prediction ───────────────────────────
         try:
             pred_idx = self.model.predict(features)[0]
             probas   = self.model.predict_proba(features)[0]
         except Exception as e:
-            logger.error(f"Prediction error: {e}")
-            return self._empty(hand_count, f"Error: {e}")
+            return self._empty(hand_count, f"Prediction error: {e}")
 
-        raw_conf  = float(probas[pred_idx])
-        all_probs = {self.label_encoder.classes_[i]: float(p) for i, p in enumerate(probas)}
+        raw_conf = float(probas[pred_idx])
 
+        # ── Buffer smoothing (LIKE YOUR OLD CODE) ──
         self._pred_buf.append(pred_idx)
         self._conf_buf.append(raw_conf)
 
         smooth_idx  = Counter(self._pred_buf).most_common(1)[0][0]
         smooth_conf = float(np.mean(self._conf_buf))
-        sign        = self.label_encoder.inverse_transform([smooth_idx])[0]
-        stable      = (raw_conf >= self.CONFIDENCE_THRESHOLD
-                       and len(self._pred_buf) >= max(2, self.SMOOTHING_WINDOW // 2))
 
-        msg = sign if stable else "Detecting…"
+        sign = self.label_encoder.inverse_transform([smooth_idx])[0]
+
+        # ── Stability logic (IMPROVED) ───────────
+        stable = (
+            len(self._pred_buf) >= self.SMOOTHING_WINDOW // 2
+            and smooth_conf > self.CONFIDENCE_THRESHOLD
+        )
+        
+        # if len(self._pred_buf) < self.SMOOTHING_WINDOW:
+        #     stable = False
+        # else:
+        #     top_count = Counter(self._pred_buf).most_common(1)[0][1]
+        #     agreement = top_count / len(self._pred_buf)
+        #     stable = smooth_conf > self.CONFIDENCE_THRESHOLD and agreement >= 0.75
+        # ── Message logic ────────────────────────
+        if not stable:
+            message = "Detecting..."
+        else:
+            message = sign
+
+        # Extra UX hint for 2-hand model
         if self.feature_dim == WORDS_FEATURE_DIM and hand_count == 1:
-            msg = "Show both hands for best accuracy"
+            message = "Use both hands"
 
         return {
             "sign":           sign,
             "confidence":     smooth_conf,
             "raw_confidence": raw_conf,
-            "all_probs":      all_probs,
+            "all_probs":      {self.label_encoder.classes_[i]: float(p) for i, p in enumerate(probas)},
             "stable":         stable,
             "hand_count":     hand_count,
-            "message":        msg,
+            "message":        message,
         }
 
     def reset_buffer(self):

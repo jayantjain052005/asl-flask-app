@@ -20,6 +20,17 @@ const S = {
   // Arc constants
   ARC_CIRCUM:    201,   // 2π×32 (small HUD arc)
   BIG_CIRCUM:    352,   // 2π×56 (right panel big arc)
+
+  // ── NEW: Sentence auto-add state ──────────────────────────────
+  AUTO_ADD_DELAY:   800,    // ms sign must be held before auto-adding
+  lastAutoAdded:    null,   // last sign that was auto-added (prevent duplicates)
+  autoAddAt:        null,   // timestamp when current stable sign was first seen
+  autoAddScheduled: false,  // whether a timer is pending
+  _autoAddTimer:    null,   // the actual setTimeout handle
+
+  // ── NEW: AI grammar state ──────────────────────────────────────
+  aiFixing:      false,
+  aiFixedText:   null,      // last AI-fixed sentence (null = not yet fixed)
 };
 
 // ── Boot ─────────────────────────────────────────────────────────
@@ -34,6 +45,7 @@ async function switchMode(mode) {
   if (S.mode === mode) return;
   S.mode = mode;
   S.lastStable = null; S.stableAt = null; S.lastSpoken = null; S.heroSign = null;
+  cancelAutoAdd();
 
   // Visual mode swap
   const isAlpha = mode === "alpha";
@@ -95,6 +107,7 @@ async function startCamera() {
 
 async function stopCamera() {
   stopPoll();
+  cancelAutoAdd();
   await fetch("/api/camera/stop", { method:"POST" });
   S.running = false;
   hideFeed();
@@ -170,18 +183,12 @@ function updateHUD(d) {
   if (sign && stable) {
     let displaySign = sign;
 
-// fix model typo
-if (displaySign === "recipt") {
-  displaySign = "receipt";
-}
+    // fix model typos
+    if (displaySign === "recipt")   displaySign = "receipt";
+    if (displaySign === "Thankyou") displaySign = "thank you";
 
-// optional (cleaner UI)
-if (displaySign === "Thankyou") {
-  displaySign = "thank you";
-}
-
-document.getElementById("hudSign").textContent = displaySign;
-document.getElementById("hudSub").textContent  = message || displaySign;
+    document.getElementById("hudSign").textContent = displaySign;
+    document.getElementById("hudSub").textContent  = message || displaySign;
     setArc(confidence);
     highlightCard(sign, mode);
     updateHero(sign, confidence, mode);
@@ -193,8 +200,17 @@ document.getElementById("hudSub").textContent  = message || displaySign;
       speakSign(sign); S.lastSpoken = sign;
     }
 
-    // History
-    if (!S.history.length || S.history[0].sign !== sign) addHistory(sign, confidence, mode);
+    // ── FIXED History: only log after sign held 800ms ─────────────
+    if (sign !== S.lastStable || !S.stableAt) {
+      // new sign just appeared — reset timer, don't log yet
+    } else if (Date.now() - S.stableAt > 800) {
+      if (!S.history.length || S.history[0].sign !== sign) {
+        addHistory(sign, confidence, mode);
+      }
+    }
+
+    // ── NEW: Auto-add to sentence after AUTO_ADD_DELAY ────────────
+    scheduleAutoAdd(displaySign);
 
   } else if (!sign || hand_count === 0) {
     document.getElementById("hudSign").textContent = "—";
@@ -203,6 +219,9 @@ document.getElementById("hudSub").textContent  = message || displaySign;
     clearHero();
     S.lastStable = null; S.stableAt = null; S.lastSpoken = null;
     document.querySelectorAll(".ref-card").forEach(c => c.classList.remove("lit","lit-a"));
+
+    // Cancel any pending auto-add when hand disappears
+    cancelAutoAdd();
   }
 }
 
@@ -283,32 +302,317 @@ function renderStats() {
 }
 function resetAll() {
   S.history = []; S.session = { total:0, confSum:0, counts:{} }; S.sentence = [];
+  S.aiFixedText = null;
+  cancelAutoAdd();
   renderHistory(); renderStats(); renderSentence(); resetArc();
   document.getElementById("hudSign").textContent = "—";
   document.getElementById("hudSub").textContent  = "Waiting…";
   clearHero();
+  hideAiResult();
 }
 
-// ── Sentence builder ──────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+// ── NEW: Auto-Add to Sentence ────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Called every poll cycle when a sign is stable.
+ * Schedules an auto-add after AUTO_ADD_DELAY ms if:
+ *   - sign changed  →  reset the timer
+ *   - same sign still held  →  do nothing (timer already running)
+ *   - sign already auto-added  →  skip (no duplicate)
+ */
+function scheduleAutoAdd(sign) {
+  // Sign changed → cancel previous timer and start fresh
+  if (sign !== S.lastAutoAdded || !S.autoAddScheduled) {
+    if (sign === S.lastAutoAdded) return; // same sign, timer still counting — don't restart
+
+    cancelAutoAdd();
+    S.autoAddScheduled = true;
+
+    // Show a countdown ring on the sentence panel header
+    showAutoAddCountdown(sign);
+
+    S._autoAddTimer = setTimeout(() => {
+      S.autoAddScheduled = false;
+      S.lastAutoAdded = sign;
+      autoAddWord(sign);
+      hideAutoAddCountdown();
+    }, S.AUTO_ADD_DELAY);
+  }
+}
+
+function cancelAutoAdd() {
+  if (S._autoAddTimer) {
+    clearTimeout(S._autoAddTimer);
+    S._autoAddTimer = null;
+  }
+  S.autoAddScheduled = false;
+  S.lastAutoAdded    = null;
+  hideAutoAddCountdown();
+}
+
+function autoAddWord(sign) {
+  // Don't add same word twice in a row
+  if (S.sentence.length && S.sentence[S.sentence.length - 1] === sign) return;
+  S.sentence.push(sign);
+  S.aiFixedText = null; // reset AI fix whenever sentence changes
+  hideAiResult();
+  renderSentence();
+  flashSentencePanel();
+}
+
+// Visual feedback — flashes the sentence panel border green briefly
+function flashSentencePanel() {
+  const panel = document.querySelector(".sentence-panel");
+  if (!panel) return;
+  panel.style.transition = "box-shadow 0.1s";
+  panel.style.boxShadow  = "0 0 0 3px #00d4aa";
+  setTimeout(() => { panel.style.boxShadow = ""; }, 500);
+}
+
+// Show a small "adding in…" badge on the sentence header
+function showAutoAddCountdown(sign) {
+  let badge = document.getElementById("autoAddBadge");
+  if (!badge) {
+    badge = document.createElement("span");
+    badge.id = "autoAddBadge";
+    badge.style.cssText = `
+      display:inline-block; margin-left:10px; padding:2px 8px;
+      background:#00d4aa22; border:1px solid #00d4aa88;
+      border-radius:20px; font-size:11px; color:#00d4aa;
+      animation: autoAddPulse 1.5s infinite;
+    `;
+    // inject keyframe once
+    if (!document.getElementById("autoAddStyle")) {
+      const st = document.createElement("style");
+      st.id = "autoAddStyle";
+      st.textContent = `
+        @keyframes autoAddPulse {
+          0%,100% { opacity:1; }
+          50%      { opacity:0.4; }
+        }
+      `;
+      document.head.appendChild(st);
+    }
+    const hdr = document.querySelector(".sentence-title");
+    if (hdr) hdr.parentNode.insertBefore(badge, hdr.nextSibling);
+  }
+  badge.textContent = `⏳ Adding "${sign}"…`;
+  badge.style.display = "inline-block";
+}
+
+function hideAutoAddCountdown() {
+  const badge = document.getElementById("autoAddBadge");
+  if (badge) badge.style.display = "none";
+}
+
+// ════════════════════════════════════════════════════════════════
+// ── Sentence builder ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+
 function addWord() {
   const sign = document.getElementById("hudSign").textContent;
   if (!sign || sign === "—") return;
+  if (S.sentence.length && S.sentence[S.sentence.length - 1] === sign) return;
   S.sentence.push(sign);
+  S.aiFixedText = null;
+  hideAiResult();
   renderSentence();
 }
-function clearSentence() { S.sentence = []; renderSentence(); }
+function clearSentence() {
+  S.sentence = [];
+  S.aiFixedText = null;
+  cancelAutoAdd();
+  hideAiResult();
+  renderSentence();
+}
 function renderSentence() {
   const box = document.getElementById("sentenceBox");
   if (!S.sentence.length) {
-    box.innerHTML = '<span class="sentence-placeholder">Detected signs will appear here…</span>'; return;
+    box.innerHTML = '<span class="sentence-placeholder">Your detected signs shall appear here, like ink on parchment…</span>';
+    return;
   }
   box.innerHTML = S.sentence.map((w, i) =>
-    `<span class="word-chip" onclick="removeWord(${i})" title="Click to remove">${w}</span>`
+    `<span class="word-chip" onclick="removeWord(${i})" title="Click to remove">${w} <span style="font-size:10px;opacity:0.5">✕</span></span>`
   ).join("");
 }
-function removeWord(i) { S.sentence.splice(i, 1); renderSentence(); }
+function removeWord(i) {
+  S.sentence.splice(i, 1);
+  S.aiFixedText = null;
+  hideAiResult();
+  renderSentence();
+}
 function speakSentence() {
-  if (S.sentence.length) speak(S.sentence.join(" "));
+  // If AI-fixed text exists, speak that; else speak raw words
+  const text = S.aiFixedText || S.sentence.join(" ");
+  if (text) speak(text);
+}
+
+// ════════════════════════════════════════════════════════════════
+// ── NEW: AI Grammar Fix ───────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+
+async function fixGrammarWithAI() {
+  if (!S.sentence.length) {
+    alert("Add some signs to the sentence first!");
+    return;
+  }
+  if (S.aiFixing) return;
+
+  S.aiFixing = true;
+  const btn = document.getElementById("btnAiFix");
+  btn.disabled = true;
+  btn.textContent = "✨ Fixing…";
+
+  const rawWords = S.sentence.join(" ");
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{
+          role: "user",
+          content: `You are a sign language interpreter assistant. 
+          
+The user signed these words in sequence: "${rawWords}"
+
+Sign language often omits articles (a, an, the), conjunctions, and uses a different word order than spoken English.
+
+Convert this into a natural, grammatically correct English sentence. 
+- Keep the meaning intact
+- Add proper articles, prepositions, punctuation
+- Fix word order if needed
+- If it's already correct, just return it cleaned up
+
+Reply with ONLY the corrected sentence. No explanation, no quotes, no extra text.`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const fixed = data.content?.[0]?.text?.trim();
+
+    if (fixed) {
+      S.aiFixedText = fixed;
+      showAiResult(rawWords, fixed);
+    } else {
+      throw new Error("Empty response");
+    }
+
+  } catch (err) {
+    showAiError("AI unavailable — check your connection.");
+    console.error("AI fix error:", err);
+  } finally {
+    S.aiFixing = false;
+    btn.disabled = false;
+    btn.textContent = "✨ Fix Grammar";
+  }
+}
+
+function showAiResult(original, fixed) {
+  let box = document.getElementById("aiResultBox");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "aiResultBox";
+    box.style.cssText = `
+      margin-top: 10px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1a1228 0%, #12101a 100%);
+      border: 1px solid #a78bfa55;
+      font-family: 'IM Fell English', serif;
+      animation: fadeInUp 0.3s ease;
+    `;
+    if (!document.getElementById("aiResultStyle")) {
+      const st = document.createElement("style");
+      st.id = "aiResultStyle";
+      st.textContent = `
+        @keyframes fadeInUp {
+          from { opacity:0; transform:translateY(8px); }
+          to   { opacity:1; transform:translateY(0);   }
+        }
+        #aiResultBox .ai-label {
+          font-size: 10px; letter-spacing: 1.5px; color: #a78bfa;
+          text-transform: uppercase; margin-bottom: 6px;
+        }
+        #aiResultBox .ai-original {
+          font-size: 12px; color: #8b95a8; margin-bottom: 8px;
+          text-decoration: line-through; font-style: italic;
+        }
+        #aiResultBox .ai-fixed {
+          font-size: 17px; color: #e8dcc8; font-weight: 600;
+          line-height: 1.4;
+        }
+        #aiResultBox .ai-actions {
+          display: flex; gap: 8px; margin-top: 10px;
+        }
+        #aiResultBox .ai-act-btn {
+          padding: 4px 12px; border-radius: 20px; border: 1px solid #a78bfa66;
+          background: transparent; color: #a78bfa; font-size: 11px;
+          cursor: pointer; transition: background 0.2s;
+        }
+        #aiResultBox .ai-act-btn:hover { background: #a78bfa22; }
+      `;
+      document.head.appendChild(st);
+    }
+    // Insert after sentence-panel
+    const panel = document.querySelector(".sentence-panel");
+    if (panel) panel.after(box);
+  }
+
+  box.innerHTML = `
+    <div class="ai-label">✨ AI Grammar Fix</div>
+    <div class="ai-original">Original: ${original}</div>
+    <div class="ai-fixed">${fixed}</div>
+    <div class="ai-actions">
+      <button class="ai-act-btn" onclick="speakAiFixed()">🔊 Speak</button>
+      <button class="ai-act-btn" onclick="copyAiFixed()">📋 Copy</button>
+      <button class="ai-act-btn" onclick="useAiFixed()">↩ Replace Sentence</button>
+      <button class="ai-act-btn" onclick="hideAiResult()" style="margin-left:auto; border-color:#f472b655; color:#f472b6;">✕ Dismiss</button>
+    </div>
+  `;
+  box.style.display = "block";
+}
+
+function showAiError(msg) {
+  let box = document.getElementById("aiResultBox");
+  if (!box) return;
+  box.innerHTML = `<div style="color:#f87171; font-size:13px;">⚠ ${msg}</div>`;
+  box.style.display = "block";
+  setTimeout(() => hideAiResult(), 3000);
+}
+
+function hideAiResult() {
+  const box = document.getElementById("aiResultBox");
+  if (box) box.style.display = "none";
+}
+
+function speakAiFixed() {
+  if (S.aiFixedText) speak(S.aiFixedText);
+}
+
+function copyAiFixed() {
+  if (S.aiFixedText) {
+    navigator.clipboard.writeText(S.aiFixedText).then(() => {
+      const btn = document.querySelector("#aiResultBox .ai-act-btn");
+      if (btn && btn.textContent.includes("Copy")) {
+        btn.textContent = "✅ Copied!";
+        setTimeout(() => { btn.textContent = "📋 Copy"; }, 1500);
+      }
+    });
+  }
+}
+
+function useAiFixed() {
+  if (!S.aiFixedText) return;
+  // Replace sentence array with the AI-fixed words
+  S.sentence = S.aiFixedText.replace(/[.,!?]/g, "").split(" ").filter(Boolean);
+  hideAiResult();
+  renderSentence();
 }
 
 // ── Voice ─────────────────────────────────────────────────────────
