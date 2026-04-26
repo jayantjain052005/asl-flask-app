@@ -2,7 +2,6 @@ __pycache__/
 *.pyc
 .env
 venv/
-dataset/
 *.jpg
 *.png
 .DS_Store
